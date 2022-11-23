@@ -31,18 +31,18 @@ RUN cargo chef cook --release --recipe-path recipe.json
 # This tells docker to use the Rust official image
 FROM rust:1.65.0-slim AS builder
 
-# CREATE appuser
-ENV USER=web
-ENV UID=1001
+# # CREATE appuser
+# ENV USER=web
+# ENV UID=1001
 
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/noneexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    "${USER}"
+# RUN adduser \
+#     --disabled-password \
+#     --gecos "" \
+#     --home "/noneexistent" \
+#     --shell "/sbin/nologin" \
+#     --no-create-home \
+#     --uid "${UID}" \
+#     "${USER}"
 
 # Copy the files in your machine to the Docker image
 COPY ./ ./app
@@ -70,7 +70,12 @@ COPY --from=builder /app/target/release/broadcaster /app/broadcaster
 # Set the work directory
 WORKDIR /app
 
-USER web:web
+# USER web:web
 
 # Run the binary
+
+ENV ROCKET_ADDRESS=0.0.0.0
+
+EXPOSE 8000
+
 CMD ["./broadcaster"]
