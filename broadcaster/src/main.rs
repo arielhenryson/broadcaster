@@ -1,4 +1,3 @@
-use std::{thread, time::Duration};
 use rocket::fs::{FileServer,relative};
 use rocket::{State, Shutdown};
 use rocket::form::Form;
@@ -6,6 +5,8 @@ use rocket::response::stream::{EventStream, Event};
 use rocket::serde::{Serialize, Deserialize};
 use rocket::tokio::sync::broadcast::{channel, Sender, error::RecvError};
 use rocket::tokio::select;
+
+mod data_source;
 
 #[macro_use] extern crate rocket;
 
@@ -22,14 +23,8 @@ pub struct Message {
 
 #[post("/message", data = "<form>")]
 fn post(form: Form<Message>, queue: &State<Sender<Message>>) -> &'static str {
-    let val = form.into_inner().clone();
+    let _res = queue.send(form.into_inner());
 
-    for _n in 0..10000 {
-        let val2 = val.clone();
-
-        thread::sleep(Duration::from_millis(100));
-        let _res = queue.send(val2);
-    }
     "brodcaster is posting"
 }
 
@@ -41,7 +36,10 @@ async fn events(queue: &State<Sender<Message>>, mut end: Shutdown) -> EventStrea
         loop {
             let msg = select! {
                 msg = rx.recv() => match msg {
-                    Ok(msg) => msg,
+                    Ok(msg) => {
+                        println!("{:?}", msg);
+                        msg
+                    },
                     Err(RecvError::Closed) => break,
                     Err(RecvError::Lagged(_)) => continue,
                 },
@@ -55,6 +53,8 @@ async fn events(queue: &State<Sender<Message>>, mut end: Shutdown) -> EventStrea
 
 #[launch]
 fn rocket() -> _ {
+    data_source::main::init();
+
     rocket::build()
         .manage(channel::<Message>(1024). 0)
         .mount("/", routes![
