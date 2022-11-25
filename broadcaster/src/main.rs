@@ -20,10 +20,12 @@ pub struct Message {
 
 #[launch]
 fn rocket() -> _ {
-    data_source::main::init();
+    let main_channel = channel::<Message>(1024). 0;
+
+    data_source::main::init(main_channel.clone());
 
     rocket::build()
-        .manage(channel::<Message>(1024). 0)
+        .manage(main_channel)
         .mount("/", routes![
             router::routes::post,
             router::routes::events
