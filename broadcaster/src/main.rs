@@ -1,6 +1,7 @@
 use rocket::fs::{FileServer,relative};
 use rocket::serde::{Serialize, Deserialize};
 use rocket::tokio::sync::broadcast::{channel};
+use dotenv;
 
 mod data_source;
 mod router;
@@ -19,10 +20,12 @@ pub struct Message {
 }
 
 #[launch]
-fn rocket() -> _ {
+async fn rocket() -> _ {
+    dotenv::dotenv().ok();
+    
     let main_channel = channel::<Message>(1024). 0;
 
-    data_source::main::init(main_channel.clone());
+    data_source::main::init(main_channel.clone()).await;
 
     rocket::build()
         .manage(main_channel)
